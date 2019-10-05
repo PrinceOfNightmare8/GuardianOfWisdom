@@ -1,16 +1,18 @@
 const Discord = require("discord.js");
 const fetch = require('node-fetch');
+const fs = require('fs')
 const client = new Discord.Client();
 const prefix = "<@628302057572663296>";
 const baseUrl = "https://mazebert.com/rest/player/profile?id=";
-var userToVerify, userIdToVerify, userUrl, getFirstCurrentXp, getAfterCurrentXp, mazebertLevel, mazebertName, newAKA;
+var userToVerify, userIdToVerify, userUrl, getFirstCurrentXp, getAfterCurrentXp, mazebertLevel, mazebertName, mazebertLink, newAKA, autoUpdateFile;
 
 client.on("ready", () => {
   console.log("Logged in as " +client.user.tag + "!");
 });
 
 client.on("message", async message => {
-	let validation = message.content.substring(message.content.indexOf(" "), message.content.length);
+	//automaticUpdate();
+	validation = message.content.substring(message.content.indexOf(" "), message.content.length);
 	let secondValidation = message.content.substring(message.content.indexOf(" ") + 7, message.content.length);
 	if (message.content.substring(0,21) == prefix){
 		switch (validation){
@@ -40,6 +42,7 @@ client.on("message", async message => {
 						mazebertName = await takeXpVerification(userUrl);
 						mazebertName = mazebertName["profile"]["name"];
 						setRole(message, mazebertName, mazebertLevel);
+						//updateVerificatedUser(message, mazebertLevel, mazebertName, userUrl);
 						userToVerify = undefined;
 						userUrl = undefined;
 						userIdToVerify = undefined;
@@ -93,9 +96,6 @@ async function takeXpVerification(userUrl){
     return await fetch(userUrl)
     .then(res => res.json())
 }
-
-client.login("NjI4MzAyMDU3NTcyNjYzMjk2.XZNaxA.oMmPHGjDNiLO6NtFqdmeE_B2i5A");
-
 function roleMaker(message) {
 	var commonRole = message.guild.roles.find(role => role.name === "Common");
 	var uncommonRole = message.guild.roles.find(role => role.name === "Uncommon");
@@ -154,6 +154,63 @@ function setRole(message, mazebertName, mazebertLevel){
 	else if (mazebertLevel > 120) {
 		message.member.addRole(epicRole);
 	};
-	newAKA = mazebertName + " Level " + mazebertLevel;
+	newAKA = mazebertName + " | Level " + mazebertLevel;
 	message.member.setNickname(newAKA)
+	newAKA = undefined;
 };
+/*function updateVerificatedUser(message, mazebertLevel, mazebertName, mazebertLink) {
+	fs.readFile('verificatedUser.json', 'utf8', (err, jsonString) => {
+    if (err) {
+        console.log("Error reading file from disk:", err)
+        return
+    }
+    try {
+        var userVerify = JSON.parse(jsonString)
+        console.log("Current user:", customer.address)
+	} catch(err) {
+			console.log('Error parsing JSON string:', err)
+		}
+	});
+	var newUser = {
+		"discordId": message.author.id,
+		"mazebertName": mazebertName,
+		"mazebertLevel": mazebertLevel
+		"mazebertLink": mazebertLink;
+	}
+	userVerify.push(newUser);
+	var jsonString = JSON.stringify(newUser)
+	fs.writeFile('verificatedUser.json', jsonString, err => {
+		if (err) {
+			console.log('Error writing file', err)
+		} else {
+			console.log('Successfully wrote file')
+		}
+	});
+};
+function readAutomaticUpdate(userVerify) {
+	fs.readFile('verificatedUser.json', 'utf8', (err, jsonString) => {
+    if (err) {
+        console.log("Error reading file from disk:", err)
+        return
+    }
+    try {
+        userVerify = JSON.parse(jsonString)
+        console.log("Current user:", customer.address)
+	} catch(err) {
+			console.log('Error parsing JSON string:', err)
+		}
+	});
+	return userVerify;
+};
+function automaticUpdate() {
+	var userVerify;
+	var currentLevel;
+	var oldLevel;
+	readAutomaticUpdate(userVerify);
+	for (i in userVerify) {
+		currentLevel = takeXpVerification(userVerify);
+		currentLevel = currentLevel["profile"]["level"];
+		oldLevel = userVerify[]
+	};
+};*/
+client.login("NjI4MzAyMDU3NTcyNjYzMjk2.XZWiPQ.gGhlX_8mrHlGKuxaTIPPHIq13Bw");
