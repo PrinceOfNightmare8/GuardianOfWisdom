@@ -4,7 +4,22 @@ const fs = require('fs')
 const client = new Discord.Client();
 const prefix = "<@628302057572663296>";
 const baseUrl = "https://mazebert.com/rest/player/profile?id=";
-var userToVerify, userIdToVerify, userUrl, getFirstCurrentXp, getAfterCurrentXp, mazebertLevel, mazebertName, mazebertLink, newAKA, autoUpdateFile;
+const apprenticeRole = message.guild.roles.find(role => role.name === "Apprentice");
+const scholarRole = message.guild.roles.find(role => role.name === "Scholar");
+const masterRole = message.guild.roles.find(role => role.name === "Master");
+const masterDefenderRole = message.guild.roles.find(role => role.name === "Master Defender");
+const masterCommanderRole = message.guild.roles.find(role => role.name === "Master Commander");
+const kingsHandCommanderRole = message.guild.roles.find(role => role.name === "King's Hand");
+const kingRole = message.guild.roles.find(role => role.name === "King");
+const emperorRole = message.guild.roles.find(role => role.name === "Emperor");
+const masterOfTheUniverseRole = message.guild.roles.find(role => role.name === "Master of the Universe");
+const chuckNorrisRole = message.guild.roles.find(role => role.name === "Chuck Norris");
+const aTrueHeroRole = message.guild.roles.find(role => role.name === "A True Hero");
+const collectorRole = message.guild.roles.find(role => role.name === "Collector");
+const alchemistRole = message.guild.roles.find(role => role.name === "Alchemist");
+const craftsmanshipRole = message.guild.roles.find(role => role.name === "Craftsmanship");
+const completionistRole = message.guild.roles.find(role => role.name === "Completionist");
+var userToVerify, userIdToVerify, userUrl, getFirstCurrentXp, getAfterCurrentXp, mazebertLevel, mazebertName, mazebertLink, mazebertRank, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers, mazebertGoldCards, newAKA, autoUpdateFile;
 
 client.on("ready", () => {
   console.log("Logged in as " +client.user.tag + "!");
@@ -41,13 +56,29 @@ client.on("message", async message => {
 						mazebertLevel = mazebertLevel["profile"]["level"];
 						mazebertName = await takeXpVerification(userUrl);
 						mazebertName = mazebertName["profile"]["name"];
-						setRole(message, mazebertName, mazebertLevel);
+						mazebertRank = await takeXpVerification(userUrl);
+						mazebertRank = mazebertRank["profile"]["rank"];
+						mazebertGoldHeroes = await takeXpVerification(userUrl);
+						mazebertGoldHeroes = mazebertGoldHeroes["profile"]["foilHeroProgress"];
+						mazebertGoldItems = await takeXpVerification(userUrl);
+						mazebertGoldItems = mazebertGoldItems["profile"]["foilItemProgress"];
+						mazebertGoldPotions = await takeXpVerification(userUrl);
+						mazebertGoldPotions = mazebertGoldPotions["profile"]["foilPotionProgress"];
+						mazebertGoldTowers = await takeXpVerification(userUrl);
+						mazebertGoldTowers = mazebertGoldTowers["profile"]["foilTowerProgress"];
+						setLevelRole(message, mazebertName, mazebertLevel);
+						setGoldRole(message, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers);
 						//updateVerificatedUser(message, mazebertLevel, mazebertName, userUrl);
 						userToVerify = undefined;
 						userUrl = undefined;
 						userIdToVerify = undefined;
 						mazebertLevel = undefined;
 						mazebertName = undefined;
+						mazebertRank = undefined;
+						mazebertGoldHeroes = undefined;
+						mazebertGoldItems = undefined;
+						mazebertGoldPotions = undefined;
+						mazebertGoldTowers = undefined;
 					}
 				}
 				else if (userToVerify != undefined){
@@ -65,9 +96,12 @@ client.on("message", async message => {
 				getAfterCurrentXp = undefined;
 				mazebertLevel = undefined;
 				mazebertName = undefined;
-				break;
-			case " role common make" || " role uncommon make" || " role rare make" || " role epic make":
-				roleMaker(message);
+				mazebertLink = undefined;
+				mazebertRank = undefined;
+				mazebertGoldHeroes = undefined;
+				mazebertGoldItems = undefined;
+				mazebertGoldPotions = undefined;
+				mazebertGoldTowers = undefined;
 				break;
 		};
 		if (validation == " start " + secondValidation) {
@@ -87,7 +121,7 @@ client.on("message", async message => {
 				message.reply("Before you start the verification of your play, you have to tell me to get the verification with @mention me followed by verification. If you're lost in my infinite wisdom, @mention me followed by help.");
 			}
 			else {
-				message.reply("Hey! you're wasting my time!!! You have to tell me your Mazebert id when you start the verification.");
+				message.reply("Hey! Don't waste my time!!! You have to tell me your Mazebert id when you start the verification.");
 			};
 		};
 	};
@@ -96,67 +130,57 @@ async function takeXpVerification(userUrl){
     return await fetch(userUrl)
     .then(res => res.json())
 }
-function roleMaker(message) {
-	var commonRole = message.guild.roles.find(role => role.name === "Common");
-	var uncommonRole = message.guild.roles.find(role => role.name === "Uncommon");
-	var rareRole = message.guild.roles.find(role => role.name === "Rare");
-	var legendaryRole = message.guild.roles.find(role => role.name === "Legendary");
-	var epicRole = message.guild.roles.find(role => role.name === "Epic");
-	if (commonRole == null) {
-		message.guild.createRole({
-			name: "Common",
-			color: [255, 255, 255],
-		});
+function setLevelRole(message, mazebertName, mazebertLevel){
+	if (mazebertLevel <= 20) {
+		message.member.addRole(apprenticeRole);
 	}
-	else if (uncommonRole == null) {
-		message.guild.createRole({
-			name: "Uncommon",
-			color: [27, 39, 250],
-		});
+	else if (mazebertLevel <= 40 && mazebertLevel > 20) {
+		message.member.addRole(scholarRole);
 	}
-	else if (rareRole == null) {
-		message.guild.createRole({
-			name: "Rare",
-			color: [255, 247, 87],
-		});
+	else if (mazebertLevel <= 60 && mazebertLevel > 40) {
+		message.member.addRole(masterRole);
 	}
-	else if (legendaryRole == null) {
-		message.guild.createRole({
-			name: "Legendary",
-			color: [255, 98, 31],
-		});
+	else if (mazebertLevel <= 80 && mazebertLevel > 60) {
+		message.member.addRole(masterDefenderRole);
 	}
-	else if (epicRole == null) {
-		message.guild.createRole({
-			name: "Epic",
-			color: [152, 48, 255],
-		});
+	else if (mazebertLevel <= 99 && mazebertLevel > 80) {
+		message.member.addRole(masterCommanderRole);
+	}
+	else if (mazebertLevel <= 105 && mazebertLevel > 99) {
+		message.member.addRole(kingsHandCommanderRole);
+	}
+	else if (mazebertLevel <= 110 && mazebertLevel > 105) {
+		message.member.addRole(kingRole);
+	}
+	else if (mazebertLevel <= 115 && mazebertLevel > 110) {
+		message.member.addRole(emperorRole);
+	}
+	else if (mazebertLevel <= 129 && mazebertLevel > 115) {
+		message.member.addRole(masterOfTheUniverseRole);
+	}
+	else if (mazebertLevel > 129) {
+		message.member.addRole(chuckNorrisRole);
 	};
-};
-function setRole(message, mazebertName, mazebertLevel){
-	var commonRole = message.guild.roles.find(role => role.name === "Common");
-	var uncommonRole = message.guild.roles.find(role => role.name === "Uncommon");
-	var rareRole = message.guild.roles.find(role => role.name === "Rare");
-	var legendaryRole = message.guild.roles.find(role => role.name === "Legendary");
-	var epicRole = message.guild.roles.find(role => role.name === "Epic");
-	if (mazebertLevel <= 50) {
-		message.member.addRole(commonRole);
-	}
-	else if (mazebertLevel <= 70 && mazebertLevel > 50) {
-		message.member.addRole(uncommonRole);
-	}
-	else if (mazebertLevel <= 100 && mazebertLevel > 70) {
-		message.member.addRole(rareRole);
-	}
-	else if (mazebertLevel <= 120 && mazebertLevel > 100) {
-		message.member.addRole(legendaryRole);
-	}
-	else if (mazebertLevel > 120) {
-		message.member.addRole(epicRole);
-	};
-	newAKA = mazebertName + " | Level " + mazebertLevel;
+	newAKA = mazebertName + " | Rank ☆" + mazebertRank + " | Level " + mazebertLevel;
 	message.member.setNickname(newAKA)
 	newAKA = undefined;
+};
+function setGoldRole(message, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers){
+	if (mazebertGoldHeroes == "12/12") {
+		message.member.addRole(aTrueHeroRole);
+	};
+	if (mazebertGoldItems == "66/66") {
+		message.member.addRole(collectorRole);
+	};
+	if (mazebertGoldPotions == "28/28") {
+		message.member.addRole(alchemistRole);
+	};
+	if (mazebertGoldTowers == "41/41") {
+		message.member.addRole(craftsmanshipRole);
+	};
+	if (mazebertGoldCards == "147/147") {
+		message.member.addRole(completionistRole);
+	};
 };
 /*function updateVerificatedUser(message, mazebertLevel, mazebertName, mazebertLink) {
 	fs.readFile('verificatedUser.json', 'utf8', (err, jsonString) => {
