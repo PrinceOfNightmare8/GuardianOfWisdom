@@ -7,31 +7,31 @@ const baseUrl = "https://mazebert.com/rest/player/profile?id=";
 const roles = {
    1 : {name : "Apprentice",
         min : 1,
-        max : 20}
+        max : 20},
    2 : {name : "Scholar",
         min : 21,
-        max : 40}
+        max : 40},
    3 : {name : "Master",
         min : 41,
-        max : 60}
+        max : 60},
    4 : {name : "Master Defender",
         min : 61,
-        max : 80}
+        max : 80},
    5 : {name : "Master Commander",
         min : 81,
-        max : 99}
+        max : 99},
    6 : {name : "King's Hand",
         min : 100,
-        max : 105}
+        max : 105},
    7 : {name : "King",
         min : 106,
-        max : 110}
+        max : 110},
    8 : {name : "Emperor",
         min : 111,
-        max : 115}
+        max : 115},
    9 : {name : "Master of the Universe",
         min : 116,
-        max : 129}
+        max : 129},
   10 : {name : "Chuck Norris",
         min : 130,
         max : 999999}
