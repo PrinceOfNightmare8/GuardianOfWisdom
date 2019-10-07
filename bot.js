@@ -4,6 +4,75 @@ const fs = require('fs')
 const client = new Discord.Client();
 const prefix = "<@628302057572663296>";
 const baseUrl = "https://mazebert.com/rest/player/profile?id=";
+const roles = {
+   1 : {name : "Apprentice",
+        min : 1,
+        max : 20},
+   2 : {name : "Scholar",
+        min : 21,
+        max : 40},
+   3 : {name : "Master",
+        min : 41,
+        max : 60},
+   4 : {name : "Master Defender",
+        min : 61,
+        max : 80},
+   5 : {name : "Master Commander",
+        min : 81,
+        max : 99},
+   6 : {name : "King's Hand",
+        min : 100,
+        max : 105},
+   7 : {name : "King",
+        min : 106,
+        max : 110},
+   8 : {name : "Emperor",
+        min : 111,
+        max : 115},
+   9 : {name : "Master of the Universe",
+        min : 116,
+        max : 129},
+  10 : {name : "Chuck Norris",
+        min : 130,
+        max : 999999}
+}
+
+const helpMsg = "To use me, type \"@Guardian of Wisdom [action] [input]\"\n" +
+  "In the steps below, \"@Guardian of Wisdom\" will be \"@me\"\n\n" +
+  "1 - \"@me verification\"\n" +
+  "2 - \"@me start Mazebert ID\"\n" +
+  "3 - Play a suicide game (build zero towers) and wait until you lose.\n" +
+  "4 - \"@me check\"\n" +
+  "5 - Done!\n\n" +
+  "If you get an error, type \"@me restart\" to restart the verification.";
+
+const undefinedErrorMsg = "To start the verification you have to use" +
+  " the \"@me start [Mazebert ID]\" command. " +
+  "Your Mazebert ID is in the Mazebert.com URL for your profile; " +
+  "it is the numerical code in the URL.";
+const noIDerrorMsg = "Hey! Don't waste my time!!! " +
+  "You must tell me your Mazebert id when you start the verification.\n" +
+  "Command format: \"@me start Mazebert ID\"";
+
+const waitMsg = "Bot is currently in use. " +
+  "If they take too long, use the \"@me restart\" command.";
+
+const noGameMsg = "Hey! Are you kidding me? " +
+  "You haven't finished the suicide game. Don't waste my time!";
+
+const successMsg = "Good. Now I bless you with my wisdom...";
+
+const notReadyMsg = "Before you start your verification, " +
+  "you must tell me you're ready with the \"@me verification\" command." +
+  " If you're lost outside my infinite wisdom, use the \"@me help\" command.";
+
+const readyMsg = "No one has started the verification. " +
+  "If you want to be verified, use the \"@me verification\" command.";
+
+const processingMsg = "I'm waiting your play! " +
+  "If is really you, you will blessed by my wisdom.";
+
+/* // See the lookUpRole function below.
 const apprenticeRole = message.guild.roles.find(role => role.name === "Apprentice");
 const scholarRole = message.guild.roles.find(role => role.name === "Scholar");
 const masterRole = message.guild.roles.find(role => role.name === "Master");
@@ -19,53 +88,70 @@ const collectorRole = message.guild.roles.find(role => role.name === "Collector"
 const alchemistRole = message.guild.roles.find(role => role.name === "Alchemist");
 const craftsmanshipRole = message.guild.roles.find(role => role.name === "Craftsmanship");
 const completionistRole = message.guild.roles.find(role => role.name === "Completionist");
-var userToVerify, userIdToVerify, userUrl, getFirstCurrentXp, getAfterCurrentXp, mazebertLevel, mazebertName, mazebertLink, mazebertRank, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers, mazebertGoldCards, newAKA, autoUpdateFile;
+*/
+
+var userToVerify, userIdToVerify, userUrl, getFirstCurrentXp,
+  getAfterCurrentXp, mazebertData, mazebertLevel, mazebertName, mazebertLink,
+  mazebertRank, mazebertGoldHeroes, mazebertGoldItems,mazebertGoldPotions,
+  mazebertGoldTowers, mazebertGoldCards, newAKA, autoUpdateFile, messageWords;
+
+
+// It seems like this function can replace the dozen lines of const values.
+function lookUpRole(roleName) {
+  return message.guild.roles.find(role => role.name === roleName);
+}
 
 client.on("ready", () => {
-  console.log("Logged in as " +client.user.tag + "!");
+  console.log("Logged in as " + client.user.tag + "!");
 });
 
 client.on("message", async message => {
 	//automaticUpdate();
-	validation = message.content.substring(message.content.indexOf(" "), message.content.length);
-	let secondValidation = message.content.substring(message.content.indexOf(" ") + 7, message.content.length);
-	if (message.content.substring(0,21) == prefix){
+  messageWords = message.content.split(" ");
+  // The " " before the first word is for compatibility with the old system.
+	validation = " " + messageWords[1]; // 2nd word.
+  // Only try to access array position [2] if it exists.
+	let secondValidation = (messageWords.length > 2) ? messageWords[2] : "";
+  // I think the below if could be replaced by if (messageWords[0] == prefix){
+	if (message.content.substring(0,prefix.length) == prefix){
 		switch (validation){
 			case " help":
-				message.channel.send("1 - @mention me (@Guardian of Wisdom) followed by 'verification';\n2 - @mention me again followed by start and your Mazebert ID;\n3 - Play a suicide game (build zero towers) and wait until you lose;\n4 - @mention me followed by 'check';\n5 - Done!\nIf you get some error, just @mention me followed by restart, and restart the verification.");
+				message.channel.send(helpMsg);
 				break;
 			case " verification":
 				if (userToVerify == undefined) {
-					message.channel.send("<@"+ message.author.id + "> For starting the verification you have to @mention me followed by start and your Mazebert id. You can take it in your profile, is the numerical code in the url.");
+					message.reply(undefinedErrorMsg);
 					userToVerify = message.author.id;
 				}
 				else {
-					message.reply("Before you, there is another member. Wait him or her verification.");
+					message.reply(waitMsg);
 				};
 				break;
 			case " check":
 				if (userToVerify == message.author.id){
-					getAfterCurrentXp = await takeXpVerification(userUrl);
-					getAfterCurrentXp = getAfterCurrentXp["profile"]["experience"];
+					mazebertData = await takeXpVerification(userUrl);
+					getAfterCurrentXp = mazebertData["profile"]["experience"];
 					if (getFirstCurrentXp == getAfterCurrentXp) {
-						message.reply("Hey! You're kidding me? You haven't make the suicide run, don't waist my time!!!");
+						message.reply(noGameMsg);
 					}
-					else if (getFirstCurrentXp + 1 == getAfterCurrentXp || getFirstCurrentXp + 2 == getAfterCurrentXp || getFirstCurrentXp + 3 == getAfterCurrentXp) {
-						message.reply("Good. Now i bless you with my wisdom...");
-						mazebertLevel = await takeXpVerification(userUrl);
-						mazebertLevel = mazebertLevel["profile"]["level"];
-						mazebertName = await takeXpVerification(userUrl);
-						mazebertName = mazebertName["profile"]["name"];
-						mazebertRank = await takeXpVerification(userUrl);
-						mazebertRank = mazebertRank["profile"]["rank"];
-						mazebertGoldHeroes = await takeXpVerification(userUrl);
-						mazebertGoldHeroes = mazebertGoldHeroes["profile"]["foilHeroProgress"];
-						mazebertGoldItems = await takeXpVerification(userUrl);
-						mazebertGoldItems = mazebertGoldItems["profile"]["foilItemProgress"];
-						mazebertGoldPotions = await takeXpVerification(userUrl);
-						mazebertGoldPotions = mazebertGoldPotions["profile"]["foilPotionProgress"];
-						mazebertGoldTowers = await takeXpVerification(userUrl);
-						mazebertGoldTowers = mazebertGoldTowers["profile"]["foilTowerProgress"];
+					//else if (getFirstCurrentXp + 1 == getAfterCurrentXp || getFirstCurrentXp + 2 == getAfterCurrentXp || getFirstCurrentXp + 3 == getAfterCurrentXp) {
+          else if (getFirstCurrentXp + 5 >= getAfterCurrentXp) {
+						message.reply(successMsg);
+            mazebertData = await takeXpVerification(userUrl);
+						//mazebertLevel = await takeXpVerification(userUrl);
+						mazebertLevel = mazebertData["profile"]["level"];
+						//mazebertName = await takeXpVerification(userUrl);
+						mazebertName = mazebertData["profile"]["name"];
+						///mazebertRank = await takeXpVerification(userUrl);
+						mazebertRank = mazebertData["profile"]["rank"];
+						//mazebertGoldHeroes = await takeXpVerification(userUrl);
+						mazebertGoldHeroes = mazebertData["profile"]["foilHeroProgress"];
+						//mazebertGoldItems = await takeXpVerification(userUrl);
+						mazebertGoldItems = mazebertData["profile"]["foilItemProgress"];
+						//mazebertGoldPotions = await takeXpVerification(userUrl);
+						mazebertGoldPotions = mazebertData["profile"]["foilPotionProgress"];
+						//mazebertGoldTowers = await takeXpVerification(userUrl);
+						mazebertGoldTowers = mazebertData["profile"]["foilTowerProgress"];
 						setLevelRole(message, mazebertName, mazebertLevel);
 						setGoldRole(message, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers);
 						//updateVerificatedUser(message, mazebertLevel, mazebertName, userUrl);
@@ -82,10 +168,10 @@ client.on("message", async message => {
 					}
 				}
 				else if (userToVerify != undefined){
-					message.reply("Before you, there is another member. Wait him or her verification.");
+					message.reply(waitMsg);
 				}
 				else {
-					message.reply("No one have started the verification. If you want to make the verification @mention me followed by verification.");
+					message.reply(readyMsg);
 				};
 				break;
 			case " restart":
@@ -104,12 +190,13 @@ client.on("message", async message => {
 				mazebertGoldTowers = undefined;
 				break;
 		};
-		if (validation == " start " + secondValidation) {
+		//if (validation == " start " + secondValidation) {
+    if (validation == " start") { // Now it is split by word.
 			if (userToVerify == undefined) {
-				message.reply("Before you start the verification of your play, you have to tell me to get the verification with @mention me followed by verification. If you're lost in my infinite wisdom, @mention me followed by help.");
+				message.reply(notReadyMsg);
 			}
 			else {
-				message.reply("I'm waiting your play! If is really you, you will blessed by my wisdom.");
+				message.reply(processingMsg);
 				userIdToVerify = secondValidation;
 				userUrl = baseUrl + userIdToVerify;
 				getFirstCurrentXp = await takeXpVerification(userUrl);
@@ -118,10 +205,10 @@ client.on("message", async message => {
 		}
 		else if (validation == " start" || validation == " start ") {
 			if (userToVerify == undefined) {
-				message.reply("Before you start the verification of your play, you have to tell me to get the verification with @mention me followed by verification. If you're lost in my infinite wisdom, @mention me followed by help.");
+				message.reply(notReadyMsg);
 			}
 			else {
-				message.reply("Hey! Don't waste my time!!! You have to tell me your Mazebert id when you start the verification.");
+				message.reply(noIDerrorMsg);
 			};
 		};
 	};
@@ -130,56 +217,47 @@ async function takeXpVerification(userUrl){
     return await fetch(userUrl)
     .then(res => res.json())
 }
+
+function isCompleteFraction(fracText) {
+  let numbers = fracText.split("/");
+  return numbers[0] == numbers[1]; // Is numerator == denomenator?
+}
 function setLevelRole(message, mazebertName, mazebertLevel){
-	if (mazebertLevel <= 20) {
-		message.member.addRole(apprenticeRole);
-	}
-	else if (mazebertLevel <= 40 && mazebertLevel > 20) {
-		message.member.addRole(scholarRole);
-	}
-	else if (mazebertLevel <= 60 && mazebertLevel > 40) {
-		message.member.addRole(masterRole);
-	}
-	else if (mazebertLevel <= 80 && mazebertLevel > 60) {
-		message.member.addRole(masterDefenderRole);
-	}
-	else if (mazebertLevel <= 99 && mazebertLevel > 80) {
-		message.member.addRole(masterCommanderRole);
-	}
-	else if (mazebertLevel <= 105 && mazebertLevel > 99) {
-		message.member.addRole(kingsHandCommanderRole);
-	}
-	else if (mazebertLevel <= 110 && mazebertLevel > 105) {
-		message.member.addRole(kingRole);
-	}
-	else if (mazebertLevel <= 115 && mazebertLevel > 110) {
-		message.member.addRole(emperorRole);
-	}
-	else if (mazebertLevel <= 129 && mazebertLevel > 115) {
-		message.member.addRole(masterOfTheUniverseRole);
-	}
-	else if (mazebertLevel > 129) {
-		message.member.addRole(chuckNorrisRole);
-	};
-	newAKA = mazebertName + " | Rank ☆" + mazebertRank + " | Level " + mazebertLevel;
+  let i = 1;
+  while(mazebertLevel > roles[i]["max"]){
+    i++; // Should stop on the correct role.
+  }
+  message.member.addRole(lookUpRole(roles[i]["name"]));
+	//newAKA = mazebertName + " | Rank ☆" + mazebertRank + " | Level " + mazebertLevel;
+  // let's not use Rank - the ☆ were for completing weekly challenges.
+  // They only lasted for 2 weeks, so it wasn't very "weekly"
+  newAKA = mazebertName + " | Level " + mazebertLevel;
 	message.member.setNickname(newAKA)
 	newAKA = undefined;
 };
 function setGoldRole(message, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers){
-	if (mazebertGoldHeroes == "12/12") {
-		message.member.addRole(aTrueHeroRole);
+  // If we use == "48/48" or something like that,
+  // then it will break when another card is added.
+  // This way it always checks to see if all the cards are there.
+  if (isCompleteFraction(mazebertGoldHeroes)) {
+		//message.member.addRole(aTrueHeroRole);
+    message.member.addRole(lookUpRole("A True Hero"));
 	};
-	if (mazebertGoldItems == "66/66") {
-		message.member.addRole(collectorRole);
+	if (isCompleteFraction(mazebertGoldItems)) {
+		//message.member.addRole(collectorRole);
+    message.member.addRole(lookUpRole("Collector");
 	};
-	if (mazebertGoldPotions == "28/28") {
-		message.member.addRole(alchemistRole);
+	if (isCompleteFraction(mazebertGoldPotions)) {
+		//message.member.addRole(alchemistRole);
+    message.member.addRole(lookUpRole("Alchemist");
 	};
-	if (mazebertGoldTowers == "41/41") {
-		message.member.addRole(craftsmanshipRole);
+	if (isCompleteFraction(mazebertGoldTowers)) {
+		//message.member.addRole(craftsmanshipRole);
+    message.member.addRole(lookUpRole("Craftsmanship");
 	};
-	if (mazebertGoldCards == "147/147") {
-		message.member.addRole(completionistRole);
+	if (isCompleteFraction(mazebertGoldCards)) {
+		//message.member.addRole(completionistRole);
+    message.member.addRole(lookUpRole("Completionist");
 	};
 };
 /*function updateVerificatedUser(message, mazebertLevel, mazebertName, mazebertLink) {
