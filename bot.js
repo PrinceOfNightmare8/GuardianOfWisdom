@@ -1,136 +1,207 @@
+// Var for run main function of the bot
+
 const Discord = require("discord.js");
 const fetch = require('node-fetch');
 const fs = require('fs')
 const client = new Discord.Client();
-const prefix = "<@628302057572663296>";
+const botPrefix = "<@628302057572663296>";
 const baseUrl = "https://mazebert.com/rest/player/profile?id=";
-const apprenticeRole = message.guild.roles.find(role => role.name === "Apprentice");
-const scholarRole = message.guild.roles.find(role => role.name === "Scholar");
-const masterRole = message.guild.roles.find(role => role.name === "Master");
-const masterDefenderRole = message.guild.roles.find(role => role.name === "Master Defender");
-const masterCommanderRole = message.guild.roles.find(role => role.name === "Master Commander");
-const kingsHandCommanderRole = message.guild.roles.find(role => role.name === "King's Hand");
-const kingRole = message.guild.roles.find(role => role.name === "King");
-const emperorRole = message.guild.roles.find(role => role.name === "Emperor");
-const masterOfTheUniverseRole = message.guild.roles.find(role => role.name === "Master of the Universe");
-const chuckNorrisRole = message.guild.roles.find(role => role.name === "Chuck Norris");
-const aTrueHeroRole = message.guild.roles.find(role => role.name === "A True Hero");
-const collectorRole = message.guild.roles.find(role => role.name === "Collector");
-const alchemistRole = message.guild.roles.find(role => role.name === "Alchemist");
-const craftsmanshipRole = message.guild.roles.find(role => role.name === "Craftsmanship");
-const completionistRole = message.guild.roles.find(role => role.name === "Completionist");
-var userToVerify, userIdToVerify, userUrl, getFirstCurrentXp, getAfterCurrentXp, mazebertLevel, mazebertName, mazebertLink, mazebertRank, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers, mazebertGoldCards, newAKA, autoUpdateFile;
+var serToVerifyListObj, userToVerify, userIdToVerify, userUrl, getFirstCurrentXp, getAfterCurrentXp, mazebertLevel, mazebertName, mazebertLink, mazebertRank, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers, mazebertGoldCards, autoUpdateFile;
+
+// Var for take the bot command
+
+var isBotPrefix, botCommand, mazebertId;
+
+// Var of the message of the bot
+
+var botMessage, search;
+
+// Var for user Mazebert verification
+
+var pendingVerificationUsers = {};
+var pendingSearch, inPending, confirming, oldXp, newXp;
+
+// When the bot go online
 
 client.on("ready", () => {
   console.log("Logged in as " +client.user.tag + "!");
 });
 
+// When in the server is sent a message
+
 client.on("message", async message => {
+	search = new RegExp(message.author.id);
 	//automaticUpdate();
-	validation = message.content.substring(message.content.indexOf(" "), message.content.length);
-	let secondValidation = message.content.substring(message.content.indexOf(" ") + 7, message.content.length);
-	if (message.content.substring(0,21) == prefix){
-		switch (validation){
+	takeBotCommand(message);
+	if (isBotPrefix == botPrefix){
+		switch (botCommand){
 			case " help":
-				message.channel.send("1 - @mention me (@Guardian of Wisdom) followed by 'verification';\n2 - @mention me again followed by start and your Mazebert ID;\n3 - Play a suicide game (build zero towers) and wait until you lose;\n4 - @mention me followed by 'check';\n5 - Done!\nIf you get some error, just @mention me followed by restart, and restart the verification.");
+				botTalkMessage(botCommand, message);
+				botMessage;
 				break;
 			case " verification":
-				if (userToVerify == undefined) {
-					message.channel.send("<@"+ message.author.id + "> For starting the verification you have to @mention me followed by start and your Mazebert id. You can take it in your profile, is the numerical code in the url.");
-					userToVerify = message.author.id;
-				}
-				else {
-					message.reply("Before you, there is another member. Wait him or her verification.");
+				isPending(message)
+				if (inPending == false) {
+					addPendingVerification(message);
+					botTalkMessage(botCommand, message);
 				};
+				botMessage;
 				break;
 			case " check":
-				if (userToVerify == message.author.id){
-					getAfterCurrentXp = await takeXpVerification(userUrl);
-					getAfterCurrentXp = getAfterCurrentXp["profile"]["experience"];
-					if (getFirstCurrentXp == getAfterCurrentXp) {
-						message.reply("Hey! You're kidding me? You haven't make the suicide run, don't waist my time!!!");
-					}
-					else if (getFirstCurrentXp + 1 == getAfterCurrentXp || getFirstCurrentXp + 2 == getAfterCurrentXp || getFirstCurrentXp + 3 == getAfterCurrentXp) {
-						message.reply("Good. Now i bless you with my wisdom...");
-						mazebertLevel = await takeXpVerification(userUrl);
-						mazebertLevel = mazebertLevel["profile"]["level"];
-						mazebertName = await takeXpVerification(userUrl);
-						mazebertName = mazebertName["profile"]["name"];
-						mazebertRank = await takeXpVerification(userUrl);
-						mazebertRank = mazebertRank["profile"]["rank"];
-						mazebertGoldHeroes = await takeXpVerification(userUrl);
-						mazebertGoldHeroes = mazebertGoldHeroes["profile"]["foilHeroProgress"];
-						mazebertGoldItems = await takeXpVerification(userUrl);
-						mazebertGoldItems = mazebertGoldItems["profile"]["foilItemProgress"];
-						mazebertGoldPotions = await takeXpVerification(userUrl);
-						mazebertGoldPotions = mazebertGoldPotions["profile"]["foilPotionProgress"];
-						mazebertGoldTowers = await takeXpVerification(userUrl);
-						mazebertGoldTowers = mazebertGoldTowers["profile"]["foilTowerProgress"];
-						setLevelRole(message, mazebertName, mazebertLevel);
-						setGoldRole(message, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers);
+				for (var i = 0; i < pendingVerificationUsers["users"].length; i++) {
+					if (search.test(pendingVerificationUsers["users"][i]["userId"]) == true){
+						checking(message);
 						//updateVerificatedUser(message, mazebertLevel, mazebertName, userUrl);
-						userToVerify = undefined;
-						userUrl = undefined;
-						userIdToVerify = undefined;
-						mazebertLevel = undefined;
-						mazebertName = undefined;
-						mazebertRank = undefined;
-						mazebertGoldHeroes = undefined;
-						mazebertGoldItems = undefined;
-						mazebertGoldPotions = undefined;
-						mazebertGoldTowers = undefined;
-					}
-				}
-				else if (userToVerify != undefined){
-					message.reply("Before you, there is another member. Wait him or her verification.");
-				}
-				else {
-					message.reply("No one have started the verification. If you want to make the verification @mention me followed by verification.");
+					};
 				};
-				break;
-			case " restart":
-				userToVerify = undefined;
-				userIdToVerify = undefined;
-				userUrl = undefined;
-				getFirstCurrentXp = undefined;
-				getAfterCurrentXp = undefined;
-				mazebertLevel = undefined;
-				mazebertName = undefined;
-				mazebertLink = undefined;
-				mazebertRank = undefined;
-				mazebertGoldHeroes = undefined;
-				mazebertGoldItems = undefined;
-				mazebertGoldPotions = undefined;
-				mazebertGoldTowers = undefined;
+				botMessage;
 				break;
 		};
-		if (validation == " start " + secondValidation) {
-			if (userToVerify == undefined) {
-				message.reply("Before you start the verification of your play, you have to tell me to get the verification with @mention me followed by verification. If you're lost in my infinite wisdom, @mention me followed by help.");
-			}
-			else {
-				message.reply("I'm waiting your play! If is really you, you will blessed by my wisdom.");
-				userIdToVerify = secondValidation;
-				userUrl = baseUrl + userIdToVerify;
-				getFirstCurrentXp = await takeXpVerification(userUrl);
-				getFirstCurrentXp = getFirstCurrentXp["profile"]["experience"];
-			};
-		}
-		else if (validation == " start" || validation == " start ") {
-			if (userToVerify == undefined) {
-				message.reply("Before you start the verification of your play, you have to tell me to get the verification with @mention me followed by verification. If you're lost in my infinite wisdom, @mention me followed by help.");
-			}
-			else {
-				message.reply("Hey! Don't waste my time!!! You have to tell me your Mazebert id when you start the verification.");
+		if (botCommand == " start " + mazebertId) {
+			for (var i = 0; i < pendingVerificationUsers["users"].length; i++) {
+				if (search.test(pendingVerificationUsers["users"][i]["userId"]) == false) {
+					botTalkMessage("not verify", message);
+					botMessage;
+				}
+				else {
+					botTalkMessage("started", message);
+					botMessage;
+					addPendingStarted(message)
+				};
 			};
 		};
 	};
 });
+function takeBotCommand(message) {
+	botCommand = message.content.substring(message.content.indexOf(" "), message.content.length);
+	mazebertId = message.content.substring(message.content.indexOf(" ") + 7, message.content.length);
+	isBotPrefix = message.content.substring(0,21);
+};
+function botTalkMessage(botCommand, message) {
+	switch (botCommand) {
+		case " help":
+			botMessage = message.channel.send("1 - @mention me (@Guardian of Wisdom) followed by 'verification';\n2 - @mention me again followed by start and your Mazebert ID;\n3 - Play a suicide game (build zero towers) and wait until you lose;\n4 - @mention me followed by 'check';\n5 - Done!\nIf you get some error, just @mention me followed by restart, and restart the verification.");
+			break;
+		case " verification":
+		    botMessage = message.channel.send("<@" + message.author.id + "> For starting the verification you have to @mention me followed by start and your Mazebert id. You can take it in your profile, is the numerical code in the url.");
+			break;
+		case "waiting start":
+			botMessage = message.channel.send("<@" + message.author.id + "> Hey! You already told me you want to be verified. If you insist then start the verification!");
+			break;
+		case "waiting check":
+			botMessage = message.channel.send("<@" + message.author.id + "> I'm waiting for the suicide run, don't waste my time.");
+			break;
+		case "not verify":
+			botMessage = message.channel.send("Before you start the verification of your play, you have to tell me to get the verification with @mention me followed by verification. If you're lost in my infinite wisdom, @mention me followed by help.");
+			break;
+		case "started":
+			botMessage = message.channel.send("I'm waiting your play! If is really you, you will blessed by my wisdom.");
+			break;
+		case "checked same experience":
+			botMessage = message.channel.send("Hey! You're kidding me? You haven't make the suicide run, don't waist my time!!!");
+			break;
+		case "checked true":
+			botMessage = message.channel.send("Good. Now i bless you with my wisdom...");
+			break;
+	};
+};
+function addPendingVerification(message) {
+	if (pendingVerificationUsers["users"] == undefined) {
+		pendingVerificationUsers["users"] = [];
+	};
+	pendingVerificationUsers["users"].push({"userId":message.author.id,"started":"false"});
+};
+function isPending(message) {
+	if (pendingVerificationUsers["users"] != undefined) {
+		for (var i = 0; i < pendingVerificationUsers["users"].length; i++) {
+			if (search.test(pendingVerificationUsers["users"][i]["userId"]) == true) {
+				inPending = true;
+				if (pendingVerificationUsers["users"][i]["started"] == "true") {
+					inPending = true;
+					botTalkMessage("waiting check", message);
+				}
+				else {
+					inPending = true;
+					botTalkMessage("waiting start", message);
+				};
+			}
+			else {
+				inPending = false;
+			};
+		};
+	}
+	else {
+		inPending = false;
+	};
+};
+async function addPendingStarted(message) {
+	if (pendingVerificationUsers["users"] != undefined) {
+		for (var i = 0; i < pendingVerificationUsers["users"].length; i++) {
+			if (search.test(pendingVerificationUsers["users"][i]["userId"]) == true) {
+				pendingVerificationUsers["users"][i]["url"] = baseUrl + mazebertId;
+				pendingVerificationUsers["users"][i]["data"] = await takeXpVerification(pendingVerificationUsers["users"][i]["url"]);
+				pendingVerificationUsers["users"][i]["oldXp"] = pendingVerificationUsers["users"][i]["data"]["profile"]["experience"];
+			};
+		};
+	};
+};
+async function checking(message) {
+	if (pendingVerificationUsers["users"] != undefined) {
+		for (var i = 0; i < pendingVerificationUsers["users"].length; i++) {
+			if (search.test(pendingVerificationUsers["users"][i]["userId"]) == true) {
+				confirming = await takeXpVerification(pendingVerificationUsers["users"][i]["url"]);
+				oldXp = pendingVerificationUsers["users"][i]["oldXp"];
+				newXp = confirming["profile"]["experience"];
+				if (newXp == oldXp) {
+					botTalkMessage("checked same experience", message);
+				}
+				else if (newXp == oldXp + 1 || newXp == oldXp + 2 || newXp == oldXp + 3) {
+					botTalkMessage("checked true", message);
+					addPendingChecked(message);
+				};
+			};
+		};
+	};
+};
+async function addPendingChecked(message) {
+	if (pendingVerificationUsers["users"] != undefined) {
+		for (var i = 0; i < pendingVerificationUsers["users"].length; i++) {
+			if (search.test(pendingVerificationUsers["users"][i]["userId"]) == true) {
+				userUrl = pendingVerificationUsers["users"][i]["url"];
+				mazebertLevel = await takeXpVerification(userUrl);
+				mazebertLevel = mazebertLevel["profile"]["level"];
+				mazebertRank = await takeXpVerification(userUrl);
+				mazebertRank = mazebertRank["profile"]["rank"];
+				mazebertGoldHeroes = await takeXpVerification(userUrl);
+				mazebertGoldHeroes = mazebertGoldHeroes["profile"]["foilHeroProgress"];
+				mazebertGoldItems = await takeXpVerification(userUrl);
+				mazebertGoldItems = mazebertGoldItems["profile"]["foilItemProgress"];
+				mazebertGoldPotions = await takeXpVerification(userUrl);
+				mazebertGoldPotions = mazebertGoldPotions["profile"]["foilPotionProgress"];
+				mazebertGoldTowers = await takeXpVerification(userUrl);
+				mazebertGoldTowers = mazebertGoldTowers["profile"]["foilTowerProgress"];
+				setLevelRole(message, mazebertLevel);
+				setGoldRole(message, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers);
+				pendingVerificationUsers["users"].splice(i, 1);
+			};
+		};
+	};
+};
 async function takeXpVerification(userUrl){
     return await fetch(userUrl)
     .then(res => res.json())
 }
-function setLevelRole(message, mazebertName, mazebertLevel){
+function setLevelRole(message, mazebertLevel){
+	const apprenticeRole = message.guild.roles.find(role => role.name === "Apprentice");
+	const scholarRole = message.guild.roles.find(role => role.name === "Scholar");
+	const masterRole = message.guild.roles.find(role => role.name === "Master");
+	const masterDefenderRole = message.guild.roles.find(role => role.name === "Master Defender");
+	const masterCommanderRole = message.guild.roles.find(role => role.name === "Master Commander");
+	const kingsHandCommanderRole = message.guild.roles.find(role => role.name === "King's Hand");
+	const kingRole = message.guild.roles.find(role => role.name === "King");
+	const emperorRole = message.guild.roles.find(role => role.name === "Emperor");
+	const masterOfTheUniverseRole = message.guild.roles.find(role => role.name === "Master of the Universe");
+	const chuckNorrisRole = message.guild.roles.find(role => role.name === "Chuck Norris");
 	if (mazebertLevel <= 20) {
 		message.member.addRole(apprenticeRole);
 	}
@@ -161,11 +232,13 @@ function setLevelRole(message, mazebertName, mazebertLevel){
 	else if (mazebertLevel > 129) {
 		message.member.addRole(chuckNorrisRole);
 	};
-	newAKA = mazebertName + " | Rank ☆" + mazebertRank + " | Level " + mazebertLevel;
-	message.member.setNickname(newAKA)
-	newAKA = undefined;
 };
 function setGoldRole(message, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers){
+	const aTrueHeroRole = message.guild.roles.find(role => role.name === "A True Hero");
+	const collectorRole = message.guild.roles.find(role => role.name === "Collector");
+	const alchemistRole = message.guild.roles.find(role => role.name === "Alchemist");
+	const craftsmanshipRole = message.guild.roles.find(role => role.name === "Craftsmanship");
+	const completionistRole = message.guild.roles.find(role => role.name === "Completionist");
 	if (mazebertGoldHeroes == "12/12") {
 		message.member.addRole(aTrueHeroRole);
 	};
@@ -237,4 +310,3 @@ function automaticUpdate() {
 		oldLevel = userVerify[]
 	};
 };*/
-client.login("NjI4MzAyMDU3NTcyNjYzMjk2.XZWiPQ.gGhlX_8mrHlGKuxaTIPPHIq13Bw");
