@@ -6,7 +6,10 @@ const fs = require('fs')
 const client = new Discord.Client();
 const botPrefix = "<@628302057572663296>";
 const baseUrl = "https://mazebert.com/rest/player/profile?id=";
-var serToVerifyListObj, userToVerify, userIdToVerify, userUrl, getFirstCurrentXp, getAfterCurrentXp, mazebertLevel, mazebertName, mazebertLink, mazebertRank, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers, mazebertGoldCards, autoUpdateFile;
+
+// Future var
+
+var autoUpdateFile;
 
 // Var for take the bot command
 
@@ -20,6 +23,10 @@ var botMessage, search;
 
 var pendingVerificationUsers = {};
 var pendingSearch, inPending, confirming, oldXp, newXp;
+
+// Var for golden cards
+
+var userUrl, mazebertLevel, mazebertName, mazebertLink, mazebertRank, mazebertGoldHeroes, mazebertGoldItems, mazebertGoldPotions, mazebertGoldTowers, mazebertGoldCards, hero, item, potion, tower, current, total;
 
 // When the bot go online
 
@@ -56,6 +63,14 @@ client.on("message", async message => {
 				};
 				botMessage;
 				break;
+			case " command":
+				botTalkMessage(botCommand, message);
+				botMessage;
+				break;
+			case " update":
+				botTalkMessage(botCommand, message);
+				botMessage;
+				break;
 		};
 		if (botCommand == " start " + mazebertId) {
 			for (var i = 0; i < pendingVerificationUsers["users"].length; i++) {
@@ -70,6 +85,10 @@ client.on("message", async message => {
 				};
 			};
 		};
+		if (botCommand == " cards " + mazebertId) {
+			takeGoldenProgress(message);
+			botMessage;
+		};
 	};
 });
 function takeBotCommand(message) {
@@ -80,7 +99,7 @@ function takeBotCommand(message) {
 function botTalkMessage(botCommand, message) {
 	switch (botCommand) {
 		case " help":
-			botMessage = message.channel.send("1 - @mention me (@Guardian of Wisdom) followed by 'verification';\n2 - @mention me again followed by start and your Mazebert ID;\n3 - Play a suicide game (build zero towers) and wait until you lose;\n4 - @mention me followed by 'check';\n5 - Done!\nIf you get some error, just @mention me followed by restart, and restart the verification.");
+			botMessage = message.channel.send("1 - @mention me (@Guardian of Wisdom) followed by 'verification';\n2 - @mention me again followed by start and your Mazebert ID;\n3 - Play a suicide game (build zero towers) and wait until you lose;\n4 - @mention me followed by 'check';\n5 - Done!\nIf you want see my extra ability, just @mention me followed by command!");
 			break;
 		case " verification":
 		    botMessage = message.channel.send("<@" + message.author.id + "> For starting the verification you have to @mention me followed by start and your Mazebert id. You can take it in your profile, is the numerical code in the url.");
@@ -102,6 +121,15 @@ function botTalkMessage(botCommand, message) {
 			break;
 		case "checked true":
 			botMessage = message.channel.send("Good. Now i bless you with my wisdom...");
+			break;
+		case "golden progress":
+			botMessage = message.channel.send("<@" + message.author.id + "> Here's your current progress with the Golden Cards:\nTotal cards: " + mazebertGoldCards + ";\nHeroes: " + mazebertGoldHeroes + ";\nItems: " + mazebertGoldItems + ";\nPotions: " + mazebertGoldPotions + ";\nTowers: " + mazebertGoldTowers + ".");
+			break;
+		case " command":
+			botMessage = message.channel.send("Here a list of extra command:\ncards followed by your mazebert id: if you tell me this, i'll show your current golden cards progress.\nupdate: with this you can see my master how improve my knowledge.");
+			break;
+		case " update":
+			botMessage = message.channel.send("Let's see how my knowledge continues to increase...\n1.2.1: Added two new commands (update, card followeb by mazeber id).\n1.1.2: improve the code and making it more easy to read, multiple user verification.\n1.1.1: some minor bug fix.");
 			break;
 	};
 };
@@ -186,6 +214,33 @@ async function addPendingChecked(message) {
 			};
 		};
 	};
+};
+async function takeGoldenProgress(message) {
+	userUrl = baseUrl + mazebertId;
+	mazebertGoldHeroes = await takeXpVerification(userUrl);
+	mazebertGoldHeroes = mazebertGoldHeroes["profile"]["foilHeroProgress"];
+	mazebertGoldItems = await takeXpVerification(userUrl);
+	mazebertGoldItems = mazebertGoldItems["profile"]["foilItemProgress"];
+	mazebertGoldPotions = await takeXpVerification(userUrl);
+	mazebertGoldPotions = mazebertGoldPotions["profile"]["foilPotionProgress"];
+	mazebertGoldTowers = await takeXpVerification(userUrl);
+	mazebertGoldTowers = mazebertGoldTowers["profile"]["foilTowerProgress"];
+	hero = mazebertGoldHeroes.split("/");
+	hero[0] = Number(hero[0]);
+	hero[1] = Number(hero[1]);
+	item = mazebertGoldItems.split("/");
+	item[0] = Number(item[0]);
+	item[1] = Number(item[1]);
+	potion = mazebertGoldPotions.split("/");
+	potion[0] = Number(potion[0]);
+	potion[1] = Number(potion[1]);
+	tower = mazebertGoldTowers.split("/");
+	tower[0] = Number(tower[0]);
+	tower[1] = Number(tower[1]);
+	current = hero[0] + item[0] + potion[0] + tower[0];
+	total = hero[1] + item[1] + potion[1] + tower[1];
+	mazebertGoldCards = current + "/" + total;
+	botTalkMessage("golden progress", message);
 };
 async function takeXpVerification(userUrl){
     return await fetch(userUrl)
